@@ -35,7 +35,6 @@ from dataclasses import dataclass, field
 
 try:
     from github import Github, GithubException
-    from github.GithubObject import NotSet
 except ImportError:
     print("❌ ERROR: PyGithub is not installed. Install with: pip install pygithub")
     sys.exit(1)
@@ -449,10 +448,10 @@ def safe_power(base: float, exponent: float) -> float:
     try:
         result = base ** exponent
         if result == float('inf') or result == float('-inf'):
-            raise ValueError(f"Exponentiation overflow: {{base}}^{{exponent}}")
+            raise ValueError(f"Exponentiation overflow: {base}^{exponent}")
         return result
     except OverflowError as e:
-        raise ValueError(f"Exponentiation overflow: {{e}}")
+        raise ValueError(f"Exponentiation overflow: {e}")
 '''
         
         test_code = f'''
@@ -539,9 +538,11 @@ class TestRunner:
                 
                 return success, output
                 
-            except subprocess.TimeoutExpired:
+            except subprocess.TimeoutExpired as e:
+                logger.error(f"⏱️  Test execution timed out after 30s: {e}")
                 return False, "⏱️  Test execution timed out"
             except Exception as e:
+                logger.error(f"❌ Test execution error: {e}")
                 return False, f"❌ Test execution error: {e}"
 
 
@@ -584,7 +585,8 @@ class BranchManager:
                 self.repo.get_git_ref(f"heads/{branch_name}")
                 logger.warning(f"⚠️  Branch '{branch_name}' already exists")
                 return True  # Branch exists, no need to create
-            except:
+            except GithubException:
+                # Branch doesn't exist, which is expected
                 pass
             
             # Create new branch
@@ -593,7 +595,7 @@ class BranchManager:
             return True
             
         except GithubException as e:
-            logger.error(f"❌ Failed to create branch: {e}")
+            logger.error(f"❌ Failed to create branch: {e.status} - {e.data}")
             return False
 
 
@@ -646,7 +648,7 @@ class CommitManager:
                     branch=branch_name
                 )
                 logger.info(f"✅ Updated file: {file_path}")
-            except:
+            except GithubException:
                 # File doesn't exist, create it
                 self.repo.create_file(
                     file_path,
@@ -659,7 +661,7 @@ class CommitManager:
             return True
             
         except GithubException as e:
-            logger.error(f"❌ Commit failed: {e}")
+            logger.error(f"❌ Commit failed: {e.status} - {e.data}")
             return False
 
 
@@ -726,7 +728,7 @@ class PRManager:
             return pr.html_url
             
         except GithubException as e:
-            logger.error(f"❌ Failed to create PR: {e}")
+            logger.error(f"❌ Failed to create PR: {e.status} - {e.data}")
             return None
     
     @staticmethod
@@ -844,7 +846,7 @@ class GitHubPatchAgent:
             logger.info("=" * 70)
             
         except GithubException as e:
-            logger.error(f"❌ GitHub API error: {e}")
+            logger.error(f"❌ GitHub API error: {e.status} - {e.data}")
             sys.exit(1)
     
     def _scan_bugs(self, repo) -> List[BugReport]:
@@ -872,7 +874,7 @@ class GitHubPatchAgent:
             return bugs
             
         except GithubException as e:
-            logger.error(f"❌ Failed to scan issues: {e}")
+            logger.error(f"❌ Failed to scan issues: {e.status} - {e.data}")
             return []
     
     def _process_bug(self, repo, bug: BugReport) -> None:
@@ -944,7 +946,7 @@ def main():
     # Configuration
     config = Config(
         repo_owner="luffy45k",
-        repo_name="Fix-",  # Replace with actual repo name
+        repo_name="python-template-strings-demo",
         base_branch="main",
         dry_run=os.getenv("DRY_RUN", "false").lower() == "true"
     )
