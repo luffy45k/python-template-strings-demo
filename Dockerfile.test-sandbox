@@ -1,0 +1,27 @@
+# Dockerfile for Secure Isolated Testing Sandbox
+# Runs pytest in a sandboxed environment with:
+# - No network access
+# - Limited memory (256MB)
+# - Read-only filesystem (except /tmp)
+# - No dangerous capabilities
+
+FROM python:3.9-slim
+
+# Install pytest only (minimal attack surface)
+RUN pip install --no-cache-dir pytest==7.4.3
+
+# Create non-root user for security
+RUN useradd -m -u 1000 testuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy test files (will be mounted at runtime)
+# VOLUME /app
+
+# Switch to non-root user
+USER testuser
+
+# Default command: run pytest
+ENTRYPOINT ["pytest"]
+CMD ["/app/test_fixed_function.py", "-v"]
