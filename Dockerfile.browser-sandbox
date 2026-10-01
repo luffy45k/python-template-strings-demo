@@ -1,0 +1,23 @@
+# Ephemeral Chromium runtime for the opt-in BrowserSandbox tool.
+FROM python:3.14-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers \
+    HOME=/tmp/browser-home
+
+RUN useradd --create-home --uid 1000 browseruser
+WORKDIR /app
+
+COPY pyproject.toml README.md LICENSE ./
+COPY src ./src
+COPY tests ./tests
+RUN python -m pip install ".[browser,dev]" \
+    && python -m playwright install --with-deps chromium \
+    && chmod -R a+rX /opt/playwright-browsers /app
+
+USER browseruser
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD ["tstrings-health"]
+ENTRYPOINT ["python"]
+CMD ["-m", "pytest", "-q"]
