@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling>=1.32,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "python-template-strings-demo"
+version = "1.2.0"
+description = "A resilient, security-minded PEP 750 template string demo"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "python-template-strings-demo contributors" }]
+keywords = ["pep750", "template-strings", "t-strings", "security"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=9.1,<10",
+  "pytest-cov>=7.1,<8",
+  "ruff>=0.16.9,<0.17",
+]
+browser = ["playwright>=1.63,<2"]
+
+[project.scripts]
+tstrings-demo = "template_strings_demo.cli:main"
+tstrings-agent = "template_strings_demo.agent_cli:main"
+tstrings-health = "template_strings_demo.health:main"
+tstrings-web = "template_strings_demo.web:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/template_strings_demo"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/template_strings_demo/web.py" = ["E501"]

@@ -1,0 +1,40 @@
+# Mini Kali runtime for Mrx. Target: less than 2 GB uncompressed.
+# Kali's official rolling base is already minimal; --no-install-recommends keeps it lean.
+FROM kalilinux/kali-rolling
+
+LABEL org.opencontainers.image.title="Mrx Kali Mini Sandbox" \
+      org.opencontainers.image.description="Non-root guarded AI agent runtime under 2 GB" \
+      org.opencontainers.image.version="1.2.0"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PATH=/opt/venv/bin:$PATH \
+    HOME=/tmp/agent-home \
+    TEMPLATE_STRINGS_BROWSER_EXECUTABLE=/usr/bin/chromium
+
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends \
+        ca-certificates \
+        chromium \
+        python3 \
+        python3-venv \
+        tini \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/* \
+    && useradd --create-home --uid 1000 agentuser \
+    && python3 -m venv /opt/venv
+
+WORKDIR /tmp/build
+COPY pyproject.toml README.md CHANGELOG.md LICENSE ./
+COPY src ./src
+RUN pip install --no-compile ".[browser]" \
+    && pip uninstall --yes pip setuptools wheel \
+    && find /opt/venv -type d -name __pycache__ -prune -exec rm -rf '{}' + \
+    && rm -rf /tmp/build /tmp/*
+
+WORKDIR /app
+USER agentuser
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD ["tstrings-health"]
+ENTRYPOINT ["/usr/bin/tini", "--", "tstrings-agent"]
+CMD ["-"]
