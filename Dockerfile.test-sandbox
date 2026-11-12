@@ -1,7 +1,7 @@
 # Reproducible test image. Add runtime hardening with:
 # docker run --rm --network none --read-only --tmpfs /tmp:rw,noexec,nosuid \
 #   --memory 256m --cap-drop ALL python-template-strings-demo-test
-FROM python:3.14-slim
+FROM python:3.15-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
